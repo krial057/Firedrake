@@ -4,3 +4,4 @@ sys/firedrake
 *.bin
 *.so
 *.a
+/docs/libio/
