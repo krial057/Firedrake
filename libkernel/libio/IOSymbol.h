@@ -24,23 +24,66 @@
 class IOObject;
 class IOString;
 
+/**
+ * @brief Provides introspection and runtime support
+ *
+ * libio's runtime creates an IOSymbol instance for every class that derives from
+ * IOObject and registers it with the internal symbol database. Once registered, symbols
+ * can be looked up at runtime using the class name. You can also check the symbol of
+ * an object by calling IOObject::symbol(), the returned symbol can be used for inheritance check.
+ * An IOSymbol can also be used to create new instances of the encapsulated class by using the 
+ * alloc() method.
+ **/
 class IOSymbol
 {
 public:
-	typedef IOObject *(*AllocCallback)();
-
-	IOSymbol(const char *name, const char *super, size_t size, AllocCallback callback);
-
+	/**
+	 * Returns the symbol of the class with the given name or 0
+	 **/
 	static IOSymbol *withName(const char *name);
+	/**
+	 * Returns the symbol of the class with the given name or 0
+	 **/
 	static IOSymbol *withName(IOString *name);
 
+	/**
+	 * Returns true if the encapsulated class inherits from the class encapuslated by the other symbol
+	 **/
 	bool inheritsFrom(IOSymbol *other);
 
+	/**
+	 * Returns the name of the encapsulated class
+	 **/
 	const IOString *name() const;
+	/**
+	 * Returns the size of the encapsulated class in bytes
+	 **/
 	size_t size() const;
 
+	/**
+	 * Creates a new instance of the encapsulated class and returns it
+	 **/
 	IOObject *alloc();
+	/**
+	 * Returns the symbol of the super class, or 0 if there is no super class
+	 **/
 	IOSymbol *super();
+
+	/**
+	 * @internal
+	 * Callback used to create a new instance of a class, usually points to the static alloc() method of the class.
+	 **/
+	typedef IOObject *(*AllocCallback)();
+
+	/**
+	 * @internal
+	 * Constructor
+	 * @param name The name of the class
+	 * @param super The name of the superclass
+	 * @param size The size of the class
+	 * @param callback Callback to be used when requesting a new instance of the class
+	 **/
+	IOSymbol(const char *name, const char *super, size_t size, AllocCallback callback);
 
 private:
 	IOString *_name;
