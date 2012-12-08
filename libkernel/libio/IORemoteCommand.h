@@ -23,6 +23,13 @@
 #include "IOEventSource.h"
 #include "IOThread.h"
 
+/**
+ * @brief Executes methods synchronously on another thread
+ *
+ * The IORemoteCommand class can be used to perform method calls synchronously on another thread.
+ * Methods are executed on the IORemoteCommands run loop, and the calling thread is blocked until execution either succeeds
+ * or times out.
+ **/
 class IORemoteCommand : public IOEventSource
 {
 public:
@@ -31,10 +38,35 @@ public:
 	
 	virtual void doWork();
 
+	/**
+	 * Sets a new timeout.
+	 * @param timeout The timeout in milliseconds, or 0 to wait forever.
+	 * @remark Execution itself won't time out, only waiting for the execution to begin is affected by a timeout
+	 **/
 	void setTimeout(uint64_t timeout);
+	/**
+	 * Returns the current timeout in milliseoncds
+	 **/
 	uint64_t timeout();
 
+	/**
+	 * Executes the given action on the targeted thread.
+	 * @param action The action to perform
+	 * @param arg0 The first argument that should be passed to the action
+	 * @param arg1 The second argument that should be passed to the action
+	 * @param arg2 The third argument that should be passed to the action
+	 * @param arg3 The fourth argument that should be passed to the action
+	 * @param arg4 The fifth argument that should be passed to the action
+	 **/
 	IOReturn executeAction(Action action, void *arg0=0, void *arg1=0, void *arg2=0, void *arg3=0, void *arg4=0);
+	/**
+	 * Executes the current action of the IORemoteCommand on the targeted thread
+	 * @param arg0 The first argument that should be passed to the action
+	 * @param arg1 The second argument that should be passed to the action
+	 * @param arg2 The third argument that should be passed to the action
+	 * @param arg3 The fourth argument that should be passed to the action
+	 * @param arg4 The fifth argument that should be passed to the action
+	 **/
 	IOReturn executeCommand(void *arg0=0, void *arg1=0, void *arg2=0, void *arg3=0, void *arg4=0);
 
 private:
