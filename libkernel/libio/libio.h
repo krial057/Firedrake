@@ -40,11 +40,14 @@
 #include "IOData.h"
 #include "IOString.h"
 #include "IONumber.h"
+#include "IODate.h"
 
 #include "IOThread.h"
 #include "IORunLoop.h"
 #include "IOEventSource.h"
 #include "IOInterruptEventSource.h"
+#include "IOTimerEventSource.h"
+#include "IORemoteCommand.h"
 
 #include "IOEthernetController.h"
 

@@ -23,6 +23,7 @@
 
 #include "IOObject.h"
 #include "IOArray.h"
+#include "IOSet.h"
 #include "IOEventSource.h"
 
 class IOThread;
@@ -54,7 +55,9 @@ private:
 
 	IOThread *_host;
 	IOArray *_eventSources;
+	IOSet *_removedSources;
 
+	bool _doingStep;
 	bool _shouldStop;
 	kern_spinlock_t _lock;
 

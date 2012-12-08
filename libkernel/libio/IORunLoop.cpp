@@ -45,6 +45,7 @@ IORunLoop *IORunLoop::initWithThread(IOThread *thread)
 		_lock = KERN_SPINLOCK_INIT;
 
 		_eventSources = IOArray::alloc()->init();
+		_removedSources = IOSet::alloc()->init();
 	}
 
 	return this;
@@ -60,6 +61,7 @@ void IORunLoop::free()
 	}
 
 	_eventSources->release();
+	_removedSources->release();
 
 	super::free();
 }
@@ -76,14 +78,37 @@ bool IORunLoop::isOnThread()
 
 void IORunLoop::addEventSource(IOEventSource *eventSource)
 {
-	_eventSources->addObject(eventSource);
-	eventSource->setRunLoop(this);
+	if(isOnThread())
+	{
+		_eventSources->addObject(eventSource);
+		eventSource->setRunLoop(this);
+	}
+	else
+	{
+		kern_spinlock_lock(&_lock);
+
+		_eventSources->addObject(eventSource);
+		eventSource->setRunLoop(this);
+
+		kern_spinlock_unlock(&_lock);
+	}
 }
 
 void IORunLoop::removeEventSource(IOEventSource *eventSource)
 {
-	eventSource->setRunLoop(0);
-	_eventSources->removeObject(eventSource);
+	if(isOnThread() && _doingStep)
+	{
+		_removedSources->addObject(eventSource);
+	}
+	else
+	{
+		kern_spinlock_lock(&_lock);
+
+		eventSource->setRunLoop(0);
+		_eventSources->removeObject(eventSource);
+
+		kern_spinlock_unlock(&_lock);
+	}
 }
 
 void IORunLoop::processEventSources()
@@ -95,6 +120,17 @@ void IORunLoop::processEventSources()
 		if(eventSource->isEnabled())
 			eventSource->doWork();
 	}
+
+	IOIterator *iterator = _removedSources->objectIterator();
+	IOEventSource *eventSource;
+
+	while((eventSource = (IOEventSource *)iterator->nextObject()))
+	{
+		eventSource->setRunLoop(0);
+		_eventSources->removeObject(eventSource);
+	}
+
+	_removedSources->removeAllObjects();
 }
 
 void IORunLoop::signalWorkAvailable()
@@ -108,14 +144,17 @@ void IORunLoop::signalWorkAvailable()
 
 void IORunLoop::step()
 {
+	_doingStep = true;
+
 	IOAutoreleasePool *pool = IOAutoreleasePool::alloc()->init();
 	kern_spinlock_lock(&_lock);
 
 	processEventSources();
 
-
 	kern_spinlock_unlock(&_lock);
 	pool->release();
+
+	_doingStep = false;
 }
 
 void IORunLoop::run()

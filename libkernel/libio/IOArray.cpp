@@ -30,13 +30,6 @@
 
 IORegisterClass(IOArray, super);
 
-IOArray *IOArray::withCapacity(uint32_t capacity)
-{
-	IOArray *array = IOArray::alloc()->initWithCapacity(capacity);
-	return array->autorelease();
-}
-
-
 IOArray *IOArray::init()
 {
 	if(super::init())
@@ -83,6 +76,46 @@ void IOArray::free()
 	super::free();
 }
 
+IOArray *IOArray::array()
+{
+	IOArray *array = IOArray::alloc()->init();
+	return array->autorelease();
+}
+
+IOArray *IOArray::withCapacity(uint32_t capacity)
+{
+	IOArray *array = IOArray::alloc()->initWithCapacity(capacity);
+	return array->autorelease();
+}
+
+IOArray *IOArray::withObjects(IOObject *first, ...)
+{
+	va_list args;
+	size_t count = 1;
+
+	// Count the arguments
+	va_start(args, first);
+
+	while(va_arg(args, IOObject *) != 0)
+		count ++;
+
+	va_end(args);
+
+	// Create the array
+	IOArray *array = IOArray::alloc()->initWithCapacity(count);
+	array->addObject(first);
+
+	va_start(args, first);
+
+	IOObject *object;
+	while((object = va_arg(args, IOObject *)))
+	{
+		array->addObject(object);
+	}
+
+	va_end(args);
+	return array->autorelease();
+}
 
 // Public API
 
@@ -91,9 +124,7 @@ void IOArray::addObject(IOObject *object)
 	if(_capacity >= _count)
 	{
 		object->retain();
-		_objects[_count] = object;
-
-		_count ++;
+		_objects[_count ++] = object;
 		return;
 	}
 
@@ -108,7 +139,7 @@ void IOArray::addObject(IOObject *object)
 		_capacity = _capacity + _changeSize;
 
 		object->retain();
-		_objects[_count] = object;
+		_objects[_count ++] = object;
 
 		return;
 	}
@@ -128,9 +159,13 @@ void IOArray::removeObject(uint32_t index)
 	IOObject *object = _objects[index];
 	object->release();
 
-	memcpy(&_objects[index], &_objects[index + 1], _count - index);
 	_count --;
 
+	for(uint32_t i=index; i<_count; i++)
+	{
+		_objects[index] = _objects[index + 1];
+	}
+	
 	if((_capacity - (_changeSize * 2)) > _count)
 	{
 		IOObject **temp = (IOObject **)kalloc((_count + _changeSize) * sizeof(IOObject *));

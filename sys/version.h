@@ -24,11 +24,11 @@
 #ifndef _VERSION_H_
 #define _VERSION_H_
 
-const char *versionBeast	= "Jormungand";
-const char *versionAppendix = "_test";
+const char *versionBeast	= "Nidhogg";
+const char *versionAppendix = "";
 
 #define VersionMajor 0
-#define VersionMinor 3
+#define VersionMinor 4
 #define VersionPatch 0
 
 #define VersionCreate(major, minor, patch) ((major << 16) | (minor << 8) | (patch))

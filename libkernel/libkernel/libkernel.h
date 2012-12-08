@@ -26,6 +26,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "time.h"
 
 #include "port.h"
 
@@ -37,5 +38,7 @@
 #include "thread.h"
 #include "spinlock.h"
 #include "interrupts.h"
+
+kern_extern bool sys_checkCommandline(const char *option, char *buffer);
 
 #endif /* _LIBKERNEL_H_ */

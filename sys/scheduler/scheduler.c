@@ -16,7 +16,7 @@
 //  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include <system/assert.h>
+#include <libc/assert.h>
 #include <system/panic.h>
 #include <system/port.h>
 #include <system/tss.h>
@@ -189,14 +189,6 @@ uint32_t sd_schedule(uint32_t esp)
 			_process_currentProcess = process;
 			return sd_schedule(0x0);
 		}
-	}
-
-	// Update the processes time
-	process->usedTime += TIME_MILLISECS_PER_TICK;
-	if(((time_t)(process->usedTime) % 1000) == 0)
-	{
-		time_t time = (time_t)(process->usedTime >> 32);
-		process->usedTime = ((timestamp_t)(time + 1) << 32);
 	}
 
 	_process_currentProcess = process;

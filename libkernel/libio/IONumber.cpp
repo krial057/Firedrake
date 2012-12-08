@@ -32,7 +32,7 @@ IORegisterClass(IONumber, super);
 
 #define IONumberSimpleAccess(number, type) (*((type *)number->_buffer))
 
-IONumber *IONumber::initWithBuffer(IONumberType type, void *blob, size_t size)
+IONumber *IONumber::initWithBuffer(Type type, void *blob, size_t size)
 {
 	if(super::init())
 	{
@@ -206,6 +206,9 @@ hash_t IONumber::hash() const
 
 bool IONumber::isEqual(const IOObject *other) const
 {
+	if(this == other)
+		return true;
+
 	if(!other->isSubclassOf(symbol()))
 		return false;
 

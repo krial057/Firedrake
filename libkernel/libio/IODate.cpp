@@ -1,6 +1,6 @@
 //
-//  PCIProvider.h
-//  libPCI
+//  IODate.cpp
+//  libio
 //
 //  Created by Sidney Just
 //  Copyright (c) 2012 by Sidney Just
@@ -16,39 +16,72 @@
 //  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#ifndef _PCIPROVIDER_H_
-#define _PCIPROVIDER_H_
+#include "IODate.h"
 
-#include <libio/libio.h>
+#ifdef super
+#undef super
+#endif
+#define super IOObject
 
-extern IOString *PCIDeviceIdentifier;
-extern IOString *PCIDeviceFamily;
+IORegisterClass(IODate, super);
 
-extern IOString *PCIDevicePropertyVendorID; // IONumber::UInt16
-extern IOString *PCIDevicePropertyDeviceID; // IONumber::UInt16
-extern IOString *PCIDevicePropertyClassID; // IONumber::UInt8
-extern IOString *PCIDevicePropertySubclassID; // IONumber::UInt8
-
-class PCIProvider : public IOModule
+IODate *IODate::init()
 {
-public:
-	virtual PCIProvider *initWithKmod(kern_module_t *kmod);
-	virtual void requestProbe();
+	if(!super::init())
+		return 0;
 
-	virtual bool publish();
-	virtual void unpublish();
+	_delta = time_getTimestamp();
+	return this;
+}
 
-private:
-	virtual void free();
+IODate *IODate::initWithTimestamp(timestamp_t time)
+{
+	if(!super::init())
+		return 0;
 
-	uint32_t readConfig(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
-	void checkDevice(uint8_t bus, uint8_t device);
+	_delta = time;
+	return this;
+}
 
-	IODictionary *_devices;
-	kern_spinlock_t _lock;
-	bool _firstRun;
+IODate *IODate::initWithTimestampSinceNow(timestamp_t time)
+{
+	if(!super::init())
+		return 0;
 
-	IODeclareClass(PCIProvider)
-};
+	_delta = time_getTimestamp() + time;
+	return this;
+}
 
-#endif /* _PCIPROVIDER_H_ */
+
+bool IODate::isEqual(IOObject *other) const
+{
+	if(this == other)
+		return true;
+
+	if(other->isSubclassOf(symbol()))
+		return false;
+
+	IODate *date = (IODate *)other;
+	return _delta == date->_delta;
+}
+
+hash_t IODate::hash() const
+{
+	return (hash_t)_delta;
+}
+
+unix_time_t IODate::date() const
+{
+	unix_time_t delta = time_getBootTime();
+	return delta + time_convertTimestamp(_delta);
+}
+
+unix_time_t IODate::unixTimestamp() const
+{
+	return time_convertTimestamp(_delta);
+}
+
+timestamp_t IODate::timestamp() const
+{
+	return _delta;
+}

@@ -19,6 +19,7 @@
 #include <libc/string.h>
 #include <libc/stdlib.h>
 #include "helper.h"
+#include "syslog.h"
 
 #define SYS_UNITTABLE_MAX 6
 
@@ -146,15 +147,105 @@ void demangleCPPName(const char *name, char *buffer)
 	*buffer++ = '\0';
 }
 
+void sys_dumpgrub()
+{
+	if(bootinfo->flags & kMultibootFlagBootLoader)
+	{
+		dbg("Boot loader: \16\27%s\n", bootinfo->boot_loader_name);
+	}
+
+	dbg("Command line: \16\27%s\n", bootinfo->cmdline);
+
+	if(bootinfo->flags & kMultibootFlagModules)
+	{
+		struct multiboot_module_s *module = (struct multiboot_module_s *)bootinfo->mods_addr;
+
+		dbg("Modules: \n");
+		for(uint32_t i=0; i<bootinfo->mods_count; i++, module++)
+		{
+			dbg("  \16\27%s\n", module->name);
+		}
+	}
+
+	if(bootinfo->flags & kMultibootFlagDrives)
+	{
+		uint8_t *drivesPtr = bootinfo->drives_addr;
+		uint8_t *drivesEnd = drivesPtr + bootinfo->drives_length;
+
+		dbg("Drives: \n");
+		while(drivesPtr < drivesEnd)
+		{
+			struct multiboot_drive_s *drive = (struct multiboot_drive_s *)drivesPtr;
+
+			dbg("  \16\27#%i, %i %i %i (cylinders, heads, sectores)\n", drive->drive_number, (int)drive->drive_cylinders, (int)drive->drive_heads, (int)drive->drive_sectors);
+
+			drivesPtr += drive->size;
+		}
+	}
+}
+
+
+bool sys_checkCommandline(const char *option, char *buffer)
+{
+	if(bootinfo->flags & kMultibootFlagCommandLine)
+	{
+		char *commandLine = bootinfo->cmdline;
+		char *found = strstr(commandLine, option);
+
+		if(found)
+		{
+			bool inQuote = false;
+
+			if(buffer)
+			{
+				found += strlen(option);
+				while(*found)
+				{
+					switch(*found)
+					{
+						case '"':
+							inQuote = !inQuote;
+							if(!inQuote)
+								return true;
+
+							break;
+
+						case ' ':
+							if(inQuote)
+								*buffer++ = ' ';
+							else
+								return true;
+
+							break;
+
+						default:
+							*buffer++ = *found;
+							break;
+					}
+
+					found ++;
+				}
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 struct multiboot_module_s *sys_multibootModuleWithName(const char *name)
 {
-	struct multiboot_module_s *modules = (struct multiboot_module_s *)bootinfo->mods_addr;
-	for(uint32_t i=0; i<bootinfo->mods_count; i++)
+	if(bootinfo->flags & kMultibootFlagModules)
 	{
-		struct multiboot_module_s *module = &modules[i];
+		struct multiboot_module_s *modules = (struct multiboot_module_s *)bootinfo->mods_addr;
+		for(uint32_t i=0; i<bootinfo->mods_count; i++)
+		{
+			struct multiboot_module_s *module = &modules[i];
 
-		if(strcmp(module->name, name) == 0)
-			return module;
+			if(strcmp(module->name, name) == 0)
+				return module;
+		}
 	}
 
 	return NULL;

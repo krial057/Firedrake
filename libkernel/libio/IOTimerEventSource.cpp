@@ -1,5 +1,5 @@
 //
-//  IODMARegion.cpp
+//  IOTimerEventSource.cpp
 //  libio
 //
 //  Created by Sidney Just
@@ -16,55 +16,67 @@
 //  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "IODMARegion.h"
+#include "IOTimerEventSource.h"
+#include "IORunLoop.h"
 
 #ifdef super
 #undef super
 #endif
-#define super IOObject
+#define super IOEventSource
 
-IORegisterClass(IODMARegion, super)
+IORegisterClass(IOTimerEventSource, super);
 
-IODMARegion *IODMARegion::initWithRequest(uint32_t request, size_t pages)
+IOTimerEventSource *IOTimerEventSource::initWithDate(IODate *firedate, bool repeats)
 {
 	if(!super::init())
 		return 0;
 
-	_wrapped = dma_request(pages, request);
-	if(!_wrapped)
-	{
-		release();
-		return 0;
-	}
+	timestamp_t current = time_getTimestamp();
+
+	_fireDate = firedate->timestamp();
+	_fireInterval = _fireDate - current;
+	_repeats = repeats;
 
 	return this;
 }
 
-void IODMARegion::free()
+IOTimerEventSource *IOTimerEventSource::initWithDate(IODate *firedate, IOObject *owner, IOTimerEventSource::Action action, bool repeats)
 {
-	if(_wrapped)
-		dma_free(_wrapped);
+	if(!super::initWithAction(owner, (IOEventSource::Action)action))
+		return 0;
 
-	super::free();
+	timestamp_t current = time_getTimestamp();
+
+	_fireDate = firedate->timestamp();
+	_fireInterval = _fireDate - current;
+	_repeats = repeats;
+
+	return this;
 }
 
-
-size_t IODMARegion::availableBytes() const
+void IOTimerEventSource::doWork()
 {
-	return _wrapped->pages * 4096;
+	timestamp_t current = time_getTimestamp();
+
+	if(current > _fireDate)
+	{
+		IOTimerEventSource::Action action = (IOTimerEventSource::Action)_action;
+		action(_owner, this);
+
+		if(!_repeats)
+		{
+			disable();
+			_runLoop->removeEventSource(this);
+
+			return;
+		}
+
+		_fireDate = current + _fireInterval;
+	}
 }
 
-size_t IODMARegion::physicalRegionCount() const
+IODate *IOTimerEventSource::fireDate() const
 {
-	return _wrapped->pfragmentCount;
-}
-
-uintptr_t IODMARegion::physicalRegion(size_t index) const
-{
-	return _wrapped->pfragments[index];
-}
-
-vm_address_t IODMARegion::virtualRegion() const
-{
-	return _wrapped->vaddress;
+	IODate *date = IODate::alloc()->initWithTimestamp(_fireDate);
+	return date->autorelease();
 }

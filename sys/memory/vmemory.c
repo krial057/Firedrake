@@ -19,7 +19,7 @@
 #include <config.h>
 #include <interrupts/trampoline.h>
 #include <system/syslog.h>
-#include <system/assert.h>
+#include <libc/assert.h>
 #include <system/panic.h>
 #include <system/kernel.h>
 #include <system/lock.h>
@@ -40,20 +40,20 @@ static spinlock_t __vm_spinlock = SPINLOCK_INIT;
 
 vm_address_t __vm_alloc_noLock(vm_page_directory_t context, uintptr_t pmemory, size_t pages, uint32_t flags);
 
-#ifndef CONF_VM_NOINLINE
-static inline bool __vm_mapPage(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, uint32_t flags);
-#else
+#if CONF_VM_NOINLINE == 0
 bool __vm_mapPage(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, uint32_t flags) __attribute__((noinline));
+#else
+static inline bool __vm_mapPage(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, uint32_t flags);
 #endif
 
 
 // MARK: Inlined functions
 // REMARK: These functions assume that pdirectory is mapped!
-#ifndef CONF_VM_NOINLINE
-static inline vm_address_t __vm_findFreePagesWithLimit(vm_page_directory_t pdirectory, size_t pages, vm_address_t limit)
-#else
+#if CONF_VM_NOINLINE == 0
 vm_address_t __vm_findFreePagesWithLimit(vm_page_directory_t pdirectory, size_t pages, vm_address_t limit) __attribute__((noinline));
 vm_address_t __vm_findFreePagesWithLimit(vm_page_directory_t pdirectory, size_t pages, vm_address_t limit)
+#else
+static inline vm_address_t __vm_findFreePagesWithLimit(vm_page_directory_t pdirectory, size_t pages, vm_address_t limit)
 #endif
 {
 	size_t freePages = 0;
@@ -148,11 +148,11 @@ vm_address_t __vm_findFreePagesWithLimit(vm_page_directory_t pdirectory, size_t 
 	return (vm_address_t)((directoryIndex << 22) + (tableIndex << VM_SHIFT));
 }
 
-#ifndef CONF_VM_NOINLINE
-static inline vm_address_t __vm_findFreePages(vm_page_directory_t pdirectory, size_t pages, vm_address_t limit)
-#else
+#if CONF_VM_NOINLINE == 0
 vm_address_t __vm_findFreePages(vm_page_directory_t pdirectory, size_t pages, vm_address_t limit) __attribute__((noinline));
 vm_address_t __vm_findFreePages(vm_page_directory_t pdirectory, size_t pages, vm_address_t limit)
+#else
+static inline vm_address_t __vm_findFreePages(vm_page_directory_t pdirectory, size_t pages, vm_address_t limit)
 #endif
 {
 	size_t freePages = 0;
@@ -223,11 +223,11 @@ vm_address_t __vm_findFreePages(vm_page_directory_t pdirectory, size_t pages, vm
 	return (vm_address_t)((directoryIndex << 22) + (tableIndex << VM_SHIFT));
 }
 
-#ifndef CONF_VM_NOINLINE
-static inline vm_address_t __vm_findFreeKernelPages(size_t pages, vm_address_t limit)
-#else
+#if CONF_VM_NOINLINE == 0
 vm_address_t __vm_findFreeKernelPages(size_t pages, vm_address_t limit) __attribute__((noinline));
 vm_address_t __vm_findFreeKernelPages(size_t pages, vm_address_t limit)
+#else
+static inline vm_address_t __vm_findFreeKernelPages(size_t pages, vm_address_t limit)
 #endif
 {
 	size_t freePages = 0;
@@ -293,11 +293,11 @@ vm_address_t __vm_findFreeKernelPages(size_t pages, vm_address_t limit)
 	return (vm_address_t)((directoryIndex << 22) + (tableIndex << VM_SHIFT));
 }
 
-#ifndef CONF_VM_NOINLINE
-static inline bool __vm_mapPage(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, uint32_t flags)
-#else
+#if CONF_VM_NOINLINE == 0
 bool __vm_mapPage(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, uint32_t flags) __attribute__((noinline));
 bool __vm_mapPage(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, uint32_t flags)
+#else
+static inline bool __vm_mapPage(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, uint32_t flags)
 #endif
 {
 	if((((uint32_t)vaddress | (uint32_t)paddress) & 0xFFF))
@@ -364,11 +364,11 @@ bool __vm_mapPage(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address
 	return true;
 }
 
-#ifndef CONF_VM_NOINLINE
-static inline bool __vm_mapPageRange(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, size_t pages, uint32_t flags)
-#else
+#if CONF_VM_NOINLINE == 0
 bool __vm_mapPageRange(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, size_t pages, uint32_t flags) __attribute__((noinline));
 bool __vm_mapPageRange(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, size_t pages, uint32_t flags)
+#else
+static inline bool __vm_mapPageRange(vm_page_directory_t pdirectory, uintptr_t paddress, vm_address_t vaddress, size_t pages, uint32_t flags)
 #endif
 {
 	for(size_t page=0; page<pages; page++)
@@ -384,11 +384,11 @@ bool __vm_mapPageRange(vm_page_directory_t pdirectory, uintptr_t paddress, vm_ad
 	return true;
 }
 
-#ifndef CONF_VM_NOINLINE
-static inline uint32_t __vm_getPagetableEntry(vm_page_directory_t pdirectory, vm_address_t vaddress)
-#else
+#if CONF_VM_NOINLINE == 0
 uint32_t __vm_getPagetableEntry(vm_page_directory_t pdirectory, vm_address_t vaddress) __attribute__((noinline));
 uint32_t __vm_getPagetableEntry(vm_page_directory_t pdirectory, vm_address_t vaddress)
+#else
+static inline uint32_t __vm_getPagetableEntry(vm_page_directory_t pdirectory, vm_address_t vaddress)
 #endif
 {
 	vm_page_table_t pageTable;
@@ -687,15 +687,43 @@ void vm_mapMultibootModule(struct multiboot_module_s *module)
 
 void vm_mapMultiboot(struct multiboot_s *info)
 {
-	struct multiboot_module_s *modules = (struct multiboot_module_s *)info->mods_addr;
-
 	uintptr_t infostart = round4kDown((uintptr_t)info);
 	__vm_mapPage(__vm_kernelDirectory, infostart, infostart, VM_FLAGS_KERNEL);
 
-	for(uint32_t i=0; i<info->mods_count; i++)
+	if(info->flags & kMultibootFlagCommandLine)
 	{
-		struct multiboot_module_s *module = &modules[i];
-		vm_mapMultibootModule(module);
+		uintptr_t address = round4kDown((uintptr_t)info->cmdline);
+		__vm_mapPage(__vm_kernelDirectory, address, address, VM_FLAGS_KERNEL);
+	}
+
+	if(info->flags & kMultibootFlagModules)
+	{
+		struct multiboot_module_s *module = (struct multiboot_module_s *)info->mods_addr;
+
+		for(uint32_t i=0; i<info->mods_count; i++, module++)
+		{
+			vm_mapMultibootModule(module);
+		}
+	}
+
+	if(info->flags & kMultibootFlagDrives)
+	{
+		uint8_t *drivesPtr = info->drives_addr;
+		uint8_t *drivesEnd = drivesPtr + info->drives_length;
+
+		while(drivesPtr < drivesEnd)
+		{
+			struct multiboot_drive_s *drive = (struct multiboot_drive_s *)drivesPtr;
+			__vm_mapPageRange(__vm_kernelDirectory, (uintptr_t)drive, (vm_address_t)drive, pageCount(drive->size), VM_FLAGS_KERNEL); 
+
+			drivesPtr += drive->size;
+		}
+	}
+
+	if(info->flags & kMultibootFlagBootLoader)
+	{
+		uintptr_t address = round4kDown((uintptr_t)info->boot_loader_name);
+		__vm_mapPage(__vm_kernelDirectory, address, address, VM_FLAGS_KERNEL);
 	}
 }
 

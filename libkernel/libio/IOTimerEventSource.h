@@ -1,6 +1,6 @@
 //
-//  PCIProvider.h
-//  libPCI
+//  IOTimerEventSource.h
+//  libio
 //
 //  Created by Sidney Just
 //  Copyright (c) 2012 by Sidney Just
@@ -16,39 +16,33 @@
 //  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#ifndef _PCIPROVIDER_H_
-#define _PCIPROVIDER_H_
+#ifndef _IOTIMEREVENTSOURCE_H_
+#define _IOTIMEREVENTSOURCE_H_
 
-#include <libio/libio.h>
+#include "IOObject.h"
+#include "IOEventSource.h"
+#include "IODate.h"
 
-extern IOString *PCIDeviceIdentifier;
-extern IOString *PCIDeviceFamily;
-
-extern IOString *PCIDevicePropertyVendorID; // IONumber::UInt16
-extern IOString *PCIDevicePropertyDeviceID; // IONumber::UInt16
-extern IOString *PCIDevicePropertyClassID; // IONumber::UInt8
-extern IOString *PCIDevicePropertySubclassID; // IONumber::UInt8
-
-class PCIProvider : public IOModule
+class IOTimerEventSource : public IOEventSource
 {
 public:
-	virtual PCIProvider *initWithKmod(kern_module_t *kmod);
-	virtual void requestProbe();
+	typedef void (*Action)(IOObject *owner, IOTimerEventSource *source);
 
-	virtual bool publish();
-	virtual void unpublish();
+	IOTimerEventSource *initWithDate(IODate *firedate, bool repeats);
+	IOTimerEventSource *initWithDate(IODate *firedate, IOObject *owner, IOTimerEventSource::Action action, bool repeats);
+
+	virtual void doWork();
+
+	IODate *fireDate() const;
 
 private:
-	virtual void free();
+	bool _repeats;
+	timestamp_t _fireInterval;
+	timestamp_t _fireDate;
 
-	uint32_t readConfig(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
-	void checkDevice(uint8_t bus, uint8_t device);
+	IOObject *_object;
 
-	IODictionary *_devices;
-	kern_spinlock_t _lock;
-	bool _firstRun;
-
-	IODeclareClass(PCIProvider)
+	IODeclareClass(IOTimerEventSource)
 };
 
-#endif /* _PCIPROVIDER_H_ */
+#endif /* _IOTIMEREVENTSOURCE_H_ */

@@ -24,6 +24,7 @@
 #include <kerneld/syslogd.h>
 #include <system/syslog.h>
 #include <system/panic.h>
+#include <system/helper.h>
 #include <system/video.h>
 #include <system/kernel.h>
 
@@ -41,21 +42,20 @@ typedef bool (*sys_function_t)(void *);
 // Simple macro to initialize a system module. Its only purpose is to print a common message and abort the boot if the module is marked essential.
 void sys_init(char *name, sys_function_t function, void *data, bool essential)
 {
-	syslog(LOG_DEBUG, "Initializing %s... {", name);
+	dbg("Initializing %s... {", name);
 	if(function(data))
 	{
-		syslog(LOG_DEBUG, "} ok\n");
+		dbg("} ok\n");
 	}
 	else
 	{
-		syslog(LOG_DEBUG, "} failed\n");
+		dbg("} failed\n");
 
 		if(essential)
 			panic("Failed to initialize essential module '%s'!", name);
 	}
 }
 
-extern void _vd_init(); // Declared in system/video.c
 extern void kerneld_main(); // Declared in kerneld/kerneld.c
 extern void time_waitForBootTime(); // Declared in system/time.c
 
@@ -63,17 +63,14 @@ void sys_boot(struct multiboot_s *info) __attribute__ ((noreturn));
 void sys_boot(struct multiboot_s *info)
 {	
 	bootinfo = info;
-	_vd_init();
+	vd_clear();
+
+	syslog_level_t loglevel = (sys_checkCommandline("--debug", NULL)) ? LOG_DEBUG : LOG_INFO;
+	syslogd_setLogLevel(loglevel);
 	
-#ifndef CONF_RELEASE
-	syslogd_setLogLevel(LOG_DEBUG);
-#else
-	syslogd_setLogLevel(LOG_INFO);
-#endif
-	
-	syslog(LOG_INFO, "\16\24Firedrake\16\27 v%i.%i.%i:%i%s (%s)\n", VersionMajor, VersionMinor, VersionPatch, VersionCurrent, versionAppendix, versionBeast);
-	syslog(LOG_INFO, "Kernel compiled on %s %s\n", __DATE__, __TIME__);
-	syslog(LOG_INFO, "Here be dragons!\n\n");
+	info("\16\24Firedrake\16\27 v%i.%i.%i:%i%s (%s)\n", VersionMajor, VersionMinor, VersionPatch, VersionCurrent, versionAppendix, versionBeast);
+	info("Kernel compiled on %s %s\n", __DATE__, __TIME__);
+	info("Here be dragons!\n\n");
 
 	// Load the modules
 	sys_init("physical memory", pm_init, (void *)info, true);
@@ -88,11 +85,12 @@ void sys_boot(struct multiboot_s *info)
 	dbg("\n");
 	time_waitForBootTime(); // Wait until we have time ready
 
-#ifndef CONF_RELEASE
+	if(sys_checkCommandline("--dumpgrub", NULL))
+	{
+		sys_dumpgrub();
+	}
+
 	info("--------------------------------------------------------------------------------\n\n");
-#else
-	vd_clear();
-#endif
 
 	kerneld_main(); // Jump over to the kernel daemon which will do the rest of the work now
 	panic("kerneld bugged"); // In the case that we leave kerneld, something went really wrong. PANIC!

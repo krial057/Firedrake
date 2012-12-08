@@ -1,6 +1,6 @@
 //
-//  PCIProvider.h
-//  libPCI
+//  time.h
+//  libkernel
 //
 //  Created by Sidney Just
 //  Copyright (c) 2012 by Sidney Just
@@ -16,39 +16,23 @@
 //  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#ifndef _PCIPROVIDER_H_
-#define _PCIPROVIDER_H_
+#ifndef _LIBKERNEL_TIME_H_
+#define _LIBKERNEL_TIME_H_
 
-#include <libio/libio.h>
+#include "base.h"
+#include "stdint.h"
 
-extern IOString *PCIDeviceIdentifier;
-extern IOString *PCIDeviceFamily;
+typedef uint32_t unix_time_t;
+typedef uint64_t timestamp_t;
 
-extern IOString *PCIDevicePropertyVendorID; // IONumber::UInt16
-extern IOString *PCIDevicePropertyDeviceID; // IONumber::UInt16
-extern IOString *PCIDevicePropertyClassID; // IONumber::UInt8
-extern IOString *PCIDevicePropertySubclassID; // IONumber::UInt8
+kern_extern int32_t time_getSeconds(timestamp_t time);
+kern_extern int32_t time_getMilliseconds(timestamp_t time);
 
-class PCIProvider : public IOModule
-{
-public:
-	virtual PCIProvider *initWithKmod(kern_module_t *kmod);
-	virtual void requestProbe();
+kern_extern timestamp_t time_convertUnix(unix_time_t time);
+kern_extern unix_time_t time_convertTimestamp(timestamp_t time);
 
-	virtual bool publish();
-	virtual void unpublish();
+kern_extern timestamp_t time_getTimestamp();
+kern_extern unix_time_t time_getUnixTime(); 
+kern_extern unix_time_t time_getBootTime();
 
-private:
-	virtual void free();
-
-	uint32_t readConfig(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
-	void checkDevice(uint8_t bus, uint8_t device);
-
-	IODictionary *_devices;
-	kern_spinlock_t _lock;
-	bool _firstRun;
-
-	IODeclareClass(PCIProvider)
-};
-
-#endif /* _PCIPROVIDER_H_ */
+#endif /* _LIBKERNEL_TIME_H_ */

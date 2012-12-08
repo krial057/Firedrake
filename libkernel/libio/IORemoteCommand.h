@@ -1,6 +1,6 @@
 //
-//  assert.h
-//  Firedrake
+//  IORemoteCommand.h
+//  libio
 //
 //  Created by Sidney Just
 //  Copyright (c) 2012 by Sidney Just
@@ -16,22 +16,44 @@
 //  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-/**
- * Overview:
- * Defines simple assertion macros
- **/
-#ifndef _ASSERT_H_
-#define _ASSERT_H_
+#ifndef _IOREMOTECOMMAND_H_
+#define _IOREMOTECOMMAND_H_
 
-#include <config.h>
-#include "panic.h"
+#include "IOObject.h"
+#include "IOEventSource.h"
+#include "IOThread.h"
 
-#ifndef CONF_RELEASE
-// Assertion macro that results in a panic
-#define assert(e) __builtin_expect(!(e), 0) ? panic("%s:%i: Assertion \'%s\' failed.", __func__, __LINE__, #e) : (void)0
-#else
-#define assert(e) (void)0
-#endif
+class IORemoteCommand : public IOEventSource
+{
+public:
+	virtual IORemoteCommand *init();
+	virtual IORemoteCommand *initWithAction(IOObject *owner, Action action);
+	
+	virtual void doWork();
 
-#endif /* _ASSERT_H_ */
+	void setTimeout(uint64_t timeout);
+	uint64_t timeout();
 
+	IOReturn executeAction(Action action, void *arg0=0, void *arg1=0, void *arg2=0, void *arg3=0, void *arg4=0);
+	IOReturn executeCommand(void *arg0=0, void *arg1=0, void *arg2=0, void *arg3=0, void *arg4=0);
+
+private:
+	uint64_t _timeout;
+	IOThread *_caller;
+
+	kern_spinlock_t _lock;
+	bool _waiting;
+	bool _executed;
+	bool _cancelled;
+	bool _executing;
+
+	void *_arg0;
+	void *_arg1;
+	void *_arg2;
+	void *_arg3;
+	void *_arg4;
+
+	IODeclareClass(IORemoteCommand)
+};
+
+#endif /* _IOREMOTECOMMAND_H_ */

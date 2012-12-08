@@ -1,6 +1,6 @@
 //
-//  PCIProvider.h
-//  libPCI
+//  IODate.h
+//  libio
 //
 //  Created by Sidney Just
 //  Copyright (c) 2012 by Sidney Just
@@ -16,39 +16,29 @@
 //  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#ifndef _PCIPROVIDER_H_
-#define _PCIPROVIDER_H_
+#ifndef _IODATE_H_
+#define _IODATE_H_
 
-#include <libio/libio.h>
+#include "IOObject.h"
 
-extern IOString *PCIDeviceIdentifier;
-extern IOString *PCIDeviceFamily;
-
-extern IOString *PCIDevicePropertyVendorID; // IONumber::UInt16
-extern IOString *PCIDevicePropertyDeviceID; // IONumber::UInt16
-extern IOString *PCIDevicePropertyClassID; // IONumber::UInt8
-extern IOString *PCIDevicePropertySubclassID; // IONumber::UInt8
-
-class PCIProvider : public IOModule
+class IODate : public IOObject
 {
 public:
-	virtual PCIProvider *initWithKmod(kern_module_t *kmod);
-	virtual void requestProbe();
+	virtual IODate *init();
+	virtual IODate *initWithTimestamp(timestamp_t time);
+	virtual IODate *initWithTimestampSinceNow(timestamp_t time);
 
-	virtual bool publish();
-	virtual void unpublish();
+	virtual bool isEqual(IOObject *other) const;
+	virtual hash_t hash() const;
+
+	unix_time_t date() const;
+	unix_time_t unixTimestamp() const;
+	timestamp_t timestamp() const;
 
 private:
-	virtual void free();
+	timestamp_t _delta;
 
-	uint32_t readConfig(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
-	void checkDevice(uint8_t bus, uint8_t device);
-
-	IODictionary *_devices;
-	kern_spinlock_t _lock;
-	bool _firstRun;
-
-	IODeclareClass(PCIProvider)
+	IODeclareClass(IODate)
 };
 
-#endif /* _PCIPROVIDER_H_ */
+#endif /* _IODATE_H_ */

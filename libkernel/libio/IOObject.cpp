@@ -50,6 +50,7 @@ void IOObject::release()
 		return;
 
 	kern_spinlock_lock(&_lock);
+
 	if((-- _retainCount) == 0)
 	{
 		free();
@@ -57,6 +58,7 @@ void IOObject::release()
 
 		return;
 	}
+
 	kern_spinlock_unlock(&_lock);
 }
 

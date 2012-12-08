@@ -173,8 +173,8 @@ IOReturn kern_requestExclusiveInterrupt(void *owner, void *context, uint32_t *ou
 {
 	spinlock_lock(&__io_interrupt_lock);
 
-	uint32_t limit = ir_interruptUpperLimit();
-	for(uint32_t i=0; i<limit; i++)
+	uint32_t limit = ir_interruptPublicEnd();
+	for(uint32_t i=ir_interruptPublicBegin(); i<limit; i++)
 	{
 		if(ir_isValidInterrupt(i, true))
 		{
@@ -293,6 +293,7 @@ IOReturn kern_registerForInterrupt(uint32_t interrupt, bool exclusive, void *own
 const char *__io_exportedSymbolNames[] = {
 	"panic",
 	"__io_primitiveLog",
+	"sys_checkCommandline",
 	// Threads
 	"sd_yield",
 	"__io_threadCreate",
@@ -311,7 +312,15 @@ const char *__io_exportedSymbolNames[] = {
 	"kern_alloc",
 	"kern_free",
 	"dma_request",
-	"dma_free"
+	"dma_free",
+	// Time
+	"time_getSeconds",
+	"time_getMilliseconds",
+	"time_convertUnix",
+	"time_convertTimestamp",
+	"time_getTimestamp",
+	"time_getUnixTime",
+	"time_getBootTime"
 };
 
 io_library_t *__io_kernelLibrary = NULL;
